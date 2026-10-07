@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+# Remove a stale PID file left by an unclean shutdown.
+rm -f /tmp/rails-server.pid
+
+# Normally satisfied by the gems installed in the image.
+# Also accommodates a host lockfile that needs Linux dependencies resolved.
+bundle check || bundle install
+
+exec "$@"

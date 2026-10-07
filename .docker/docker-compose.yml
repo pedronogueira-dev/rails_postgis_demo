@@ -1,0 +1,81 @@
+name: tiny_postgis
+
+services:
+  web:
+    build:
+      # Relative to this Compose file: .. is the Rails project root.
+      context: ..
+
+      # Relative to the build context, not to this Compose file.
+      dockerfile: .docker/Dockerfile.dev
+
+      args:
+        RUBY_VERSION: ${RUBY_VERSION:?Set RUBY_VERSION in .env}
+
+    image: tiny-postgis-web:development
+
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    volumes:
+      # Mount the Rails project root, not just the .docker directory.
+      - ..:/rails
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    stdin_open: true
+    tty: true
+
+  db:
+    image: postgis/postgis:18-3.6
+    platform: linux/amd64
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: postgres
+
+    ports:
+      - "127.0.0.1:55432:5432"
+
+    volumes:
+      - postgis_data:/var/lib/postgresql
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -U postgres -d postgres
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?Set PGADMIN_DEFAULT_EMAIL in .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in .env}
+
+    ports:
+      - "127.0.0.1:5050:80"
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgis_data:
+  pgadmin_data:
