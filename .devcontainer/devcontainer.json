@@ -1,0 +1,80 @@
+{
+  "name": "Rails + PostGIS Demo",
+  "build": {
+    "dockerfile": "../.docker/Dockerfile.dev",
+    "context": ".."
+  },
+  "initializeCommand": [
+    "docker",
+    "compose",
+    "--env-file",
+    "${localWorkspaceFolder}/.env",
+    "-f",
+    "${localWorkspaceFolder}/.docker/docker-compose.yml",
+    "up",
+    "-d",
+    "--wait",
+    "db",
+    "pgadmin"
+  ],
+  "workspaceMount": "source=${localWorkspaceFolder},target=/rails,type=bind",
+  "workspaceFolder": "/rails",
+  "runArgs": [
+    "--env-file",
+    "${localWorkspaceFolder}/.env",
+    "--network",
+    "tiny_postgis_default"
+  ],
+  "overrideCommand": true,
+  "shutdownAction": "stopContainer",
+  "postCreateCommand": "bundle check || bundle install",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Rails"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Shopify.ruby-lsp",
+        "aki77.html-erb",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "redhat.vscode-yaml",
+        "mikestead.dotenv",
+        "EditorConfig.EditorConfig",
+        "ms-ossdata.vscode-pgsql",
+        "RandomFractalsInc.geo-data-viewer",
+        "humao.rest-client",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": false,
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "[css]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "[html]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.formatOnSave": true
+        },
+        "files.associations": {
+          "*.geojson": "json"
+        }
+      }
+    }
+  }
+}

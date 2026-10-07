@@ -7,4 +7,11 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
+  resources :sensors, only: [ :index ] do
+    collection do
+      get "nearby"
+    end
+  end
+
+  get "/api/mapbox/config", to: "mapbox_config#show"
 end

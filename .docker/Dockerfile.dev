@@ -1,38 +1,29 @@
-# syntax=docker/dockerfile:1
+FROM ruby:3.3.0-slim-bookworm
 
-ARG RUBY_VERSION
-FROM ruby:${RUBY_VERSION}-slim-bookworm
-
-# Native dependencies needed by the application's gems.
 RUN apt-get update -qq \
     && apt-get install --no-install-recommends -y \
       build-essential \
       ca-certificates \
+      curl \
       git \
       libgeos-dev \
       libpq-dev \
       libyaml-dev \
       pkg-config \
+      postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /rails
 
 ENV RAILS_ENV=development \
     BUNDLE_PATH=/usr/local/bundle \
-    BUNDLE_APP_CONFIG=/usr/local/bundle \
-    BUNDLE_JOBS=4 \
-    BUNDLE_RETRY=3
+    BUNDLE_APP_CONFIG=/usr/local/bundle
 
-# Install dependencies separately from the rest of the source.
 COPY Gemfile Gemfile.lock .ruby-version ./
 RUN bundle install
 
-# Include an application snapshot in the image.
-# Compose will overlay /rails with your local source during development.
 COPY . .
 
 EXPOSE 3000
 
-ENTRYPOINT ["/bin/sh", "/rails/bin/docker-entrypoint-dev"]
-
-CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000", "-P", "/tmp/rails-server.pid"]
+CMD ["sh", "-c", "rm -f /tmp/rails-server.pid && exec bin/rails server -b 0.0.0.0 -p 3000 -P /tmp/rails-server.pid"]

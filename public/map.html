@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PostGIS Sensor Search</title>
+
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.32.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.32.0/mapbox-gl.js"></script>
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: system-ui, sans-serif;
+      }
+
+      #map {
+        position: absolute;
+        inset: 0;
+      }
+
+      #panel {
+        position: absolute;
+        z-index: 1;
+        top: 12px;
+        left: 12px;
+        width: 300px;
+        padding: 14px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+      }
+
+      #panel h1 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+
+      #panel p {
+        margin: 6px 0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      #radius {
+        width: 100%;
+      }
+
+      #results {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <section id="panel">
+      <h1>PostGIS radius search</h1>
+
+      <p>
+        Click the map. PostGIS finds nearby sensors and returns the radius
+        polygon that Mapbox draws.
+      </p>
+
+      <label for="radius">
+        Radius: <strong><span id="radius-value">1000</span> m</strong>
+      </label>
+
+      <input
+        id="radius"
+        type="range"
+        min="100"
+        max="5000"
+        step="100"
+        value="1000"
+      />
+
+      <p id="status">Loading sensors...</p>
+      <ul id="results"></ul>
+    </section>
+
+    <script type="module">
+      const INITIAL_CENTER = [-9.14, 38.72];
+      const EMPTY_FEATURE_COLLECTION = {
+        type: "FeatureCollection",
+        features: [],
+      };
+
+      async function fetchJson(url) {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Request failed: ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      const mapboxConfig = await fetchJson("/api/mapbox/config");
+      mapboxgl.accessToken = mapboxConfig.access_token;
+
+      const radiusInput = document.getElementById("radius");
+      const radiusValue = document.getElementById("radius-value");
+      const status = document.getElementById("status");
+      const results = document.getElementById("results");
+
+      let searchCenter = INITIAL_CENTER;
+
+      const map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/standard",
+        center: INITIAL_CENTER,
+        zoom: 11,
+      });
+
+      map.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+      async function loadAllSensors() {
+        const geojson = await fetchJson("/sensors");
+        map.getSource("all-sensors").setData(geojson);
+      }
+
+      async function searchNearby(longitude, latitude) {
+        searchCenter = [longitude, latitude];
+
+        const radiusM = Number(radiusInput.value);
+        radiusValue.textContent = radiusM;
+        status.textContent = "Querying PostGIS...";
+
+        const query = new URLSearchParams({
+          longitude: longitude.toString(),
+          latitude: latitude.toString(),
+          radius_m: radiusM.toString(),
+        });
+
+        try {
+          const data = await fetchJson(`/sensors/nearby?${query}`);
+
+          map.getSource("nearby-sensors").setData(data.sensors);
+          map.getSource("search-area").setData(data.search_area);
+
+          const names = data.sensors.features.map(
+            (feature) => feature.properties.name,
+          );
+
+          status.textContent =
+            `${names.length} sensor(s) within ${radiusM} m of ` +
+            `${longitude.toFixed(5)}, ${latitude.toFixed(5)}`;
+
+          results.replaceChildren(
+            ...names.map((name) => {
+              const item = document.createElement("li");
+              item.textContent = name;
+              return item;
+            }),
+          );
+        } catch (error) {
+          console.error(error);
+          status.textContent =
+            "The PostGIS query failed. Check the Rails logs.";
+        }
+      }
+
+      map.on("load", async () => {
+        map.addSource("search-area", {
+          type: "geojson",
+          data: EMPTY_FEATURE_COLLECTION,
+        });
+
+        map.addLayer({
+          id: "search-area-fill",
+          type: "fill",
+          slot: "middle",
+          source: "search-area",
+          paint: {
+            "fill-color": "#2563eb",
+            "fill-opacity": 0.14,
+          },
+        });
+
+        map.addLayer({
+          id: "search-area-outline",
+          type: "line",
+          slot: "middle",
+          source: "search-area",
+          paint: {
+            "line-color": "#2563eb",
+            "line-width": 2,
+          },
+        });
+
+        map.addSource("all-sensors", {
+          type: "geojson",
+          data: EMPTY_FEATURE_COLLECTION,
+        });
+
+        map.addLayer({
+          id: "all-sensors",
+          type: "circle",
+          source: "all-sensors",
+          paint: {
+            "circle-radius": 6,
+            "circle-color": "#334155",
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+          },
+        });
+
+        map.addSource("nearby-sensors", {
+          type: "geojson",
+          data: EMPTY_FEATURE_COLLECTION,
+        });
+
+        map.addLayer({
+          id: "nearby-sensors",
+          type: "circle",
+          source: "nearby-sensors",
+          paint: {
+            "circle-radius": 10,
+            "circle-color": "#dc2626",
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 3,
+          },
+        });
+
+        await loadAllSensors();
+        await searchNearby(INITIAL_CENTER[0], INITIAL_CENTER[1]);
+      });
+
+      map.on("click", (event) => {
+        searchNearby(event.lngLat.lng, event.lngLat.lat);
+      });
+
+      radiusInput.addEventListener("change", () => {
+        searchNearby(searchCenter[0], searchCenter[1]);
+      });
+
+      map.on("click", "all-sensors", (event) => {
+        const feature = event.features[0];
+
+        new mapboxgl.Popup()
+          .setLngLat(feature.geometry.coordinates)
+          .setHTML(`<strong>${feature.properties.name}</strong>`)
+          .addTo(map);
+      });
+
+      map.on("mouseenter", "all-sensors", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+
+      map.on("mouseleave", "all-sensors", () => {
+        map.getCanvas().style.cursor = "";
+      });
+    </script>
+  </body>
+</html>
