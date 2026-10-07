@@ -3,29 +3,18 @@ name: tiny_postgis
 services:
   web:
     build:
-      # Relative to this Compose file: .. is the Rails project root.
       context: ..
-
-      # Relative to the build context, not to this Compose file.
       dockerfile: .docker/Dockerfile.dev
-
-      args:
-        RUBY_VERSION: ${RUBY_VERSION:?Set RUBY_VERSION in .env}
 
     image: tiny-postgis-web:development
 
-    environment:
-      RAILS_ENV: development
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_USERNAME: postgres
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    env_file:
+      - ../.env
 
     ports:
       - "127.0.0.1:3000:3000"
 
     volumes:
-      # Mount the Rails project root, not just the .docker directory.
       - ..:/rails
 
     depends_on:
@@ -39,10 +28,8 @@ services:
     image: postgis/postgis:18-3.6
     platform: linux/amd64
 
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: postgres
+    env_file:
+      - ../.env
 
     ports:
       - "127.0.0.1:55432:5432"
@@ -53,7 +40,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -h 127.0.0.1 -U postgres -d postgres
+        - pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}
       interval: 2s
       timeout: 5s
       retries: 30
@@ -62,9 +49,11 @@ services:
   pgadmin:
     image: dpage/pgadmin4:9.18
 
+    env_file:
+      - ../.env
+
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?Set PGADMIN_DEFAULT_EMAIL in .env}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in .env}
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
 
     ports:
       - "127.0.0.1:5050:80"
@@ -72,9 +61,41 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
+    configs:
+      - source: pgadmin_pgpass
+        target: /config/pgpass
+        uid: "5050"
+        gid: "5050"
+        mode: 0400
+      - source: pgadmin_servers
+        target: /pgadmin4/servers.json
+        mode: 0444
+
     depends_on:
       db:
         condition: service_healthy
+
+configs:
+  pgadmin_servers:
+    content: |
+      {
+        "Servers": {
+          "1": {
+            "Name": "Tiny PostGIS",
+            "Group": "Development",
+            "Host": "${POSTGRES_HOST:?Set POSTGRES_HOST in .env}",
+            "Port": ${POSTGRES_PORT:?Set POSTGRES_PORT in .env},
+            "MaintenanceDB": "${POSTGRES_DB:?Set POSTGRES_DB in .env}",
+            "Username": "${POSTGRES_USER:?Set POSTGRES_USER in .env}",
+            "PassFile": "/config/pgpass",
+            "SSLMode": "prefer"
+          }
+        }
+      }
+
+  pgadmin_pgpass:
+    content: |
+      ${POSTGRES_HOST:?Set POSTGRES_HOST in .env}:${POSTGRES_PORT:?Set POSTGRES_PORT in .env}:*:${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
 
 volumes:
   postgis_data:
