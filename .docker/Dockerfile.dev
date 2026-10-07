@@ -1,4 +1,4 @@
-FROM ruby:3.3.0-slim-bookworm
+FROM ruby:4.0.3-slim-bookworm
 
 RUN apt-get update -qq \
     && apt-get install --no-install-recommends -y \
@@ -9,6 +9,7 @@ RUN apt-get update -qq \
       libgeos-dev \
       libpq-dev \
       libyaml-dev \
+      less \
       pkg-config \
       postgresql-client \
     && rm -rf /var/lib/apt/lists/*
