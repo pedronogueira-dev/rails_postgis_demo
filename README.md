@@ -13,7 +13,7 @@ Things you may want to cover:
 docker run --rm \
   --volume "$PWD:/rails" \
   --workdir /rails \
-  ruby:3.3.0-slim-bookworm \
+  ruby:4.0.3-slim-bookworm \
   bundle lock
 ```
 

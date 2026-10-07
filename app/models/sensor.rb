@@ -1,7 +1,16 @@
 class Sensor < ApplicationRecord
   validates :name, :location, presence: true
 
-
+  # Finds sensors whose geography Point is within a radius of a WGS 84 point.
+  #
+  # `ST_DWithin` is used as the predicate so PostGIS can use the GiST index on
+  # `sensors.location` when that is cheaper than a sequential scan.
+  #
+  # @param longitude [Numeric] query-point longitude in decimal degrees
+  # @param latitude [Numeric] query-point latitude in decimal degrees
+  # @param radius_m [Numeric] maximum geography distance in metres
+  # @return [ActiveRecord::Relation] a composable relation containing matching
+  #   sensors
   def self.nearby(longitude:, latitude:, radius_m: 1_000)
     where(
       <<~SQL,
@@ -18,30 +27,5 @@ class Sensor < ApplicationRecord
       latitude: latitude,
       radius_m: radius_m
     )
-  end
-
-  def self.search_area_geojson(longitude:, latitude:, radius_m:)
-    sql = sanitize_sql_array(
-      [
-        <<~SQL,
-          SELECT ST_AsGeoJSON(
-            ST_Buffer(
-              ST_SetSRID(
-                ST_MakePoint(:longitude, :latitude),
-                4326
-              )::geography,
-              :radius_m
-            )::geometry
-          )
-        SQL
-        {
-          longitude: longitude,
-          latitude: latitude,
-          radius_m: radius_m
-        }
-      ]
-    )
-
-    connection.select_value(sql)
   end
 end
