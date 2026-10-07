@@ -5,20 +5,42 @@ application up and running.
 
 Things you may want to cover:
 
-* Ruby version
 
-* System dependencies
+# Docker Commands:
 
-* Configuration
+### Bundling
+```bash
+docker run --rm \
+  --volume "$PWD:/rails" \
+  --workdir /rails \
+  ruby:3.3.0-slim-bookworm \
+  bundle lock
+```
 
-* Database creation
+#### Debugging json incompatability
+```bash
+docker compose -p tiny_postgis -f .docker/docker-compose.yml \
+  run --rm --no-deps web \
+  bundle exec ruby -ractive_support -ractive_support/json \
+  -e 'puts "JSON #{JSON::VERSION}"; puts({ ok: true }.to_json)'
+```
 
-* Database initialization
+### Compose validation
+```bash
+docker compose -p tiny_postgis -f .docker/docker-compose.yml config --quiet
+```
 
-* How to run the test suite
+### Build App
+```bash
+docker compose -p tiny_postgis -f .docker/docker-compose.yml build web
+```
 
-* Services (job queues, cache servers, search engines, etc.)
+### Start Postgresql
+```bash
+docker compose -p tiny_postgis -f .docker/docker-compose.yml up -d --wait db
+```
 
-* Deployment instructions
-
-* ...
+### Start Postgresql
+```bash
+docker compose -p tiny_postgis -f .docker/docker-compose.yml up -d pgadmin
+```
