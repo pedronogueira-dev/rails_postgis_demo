@@ -37,4 +37,4 @@ end
 
 
 gem "activerecord-postgis-adapter", "~> 11.0"
-gem "json", "< 3"
+gem "json", "< 4"
