@@ -3,260 +3,150 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PostGIS Sensor Search</title>
-
+    <title>Sensor geography validation — temporary public page</title>
     <link
-      href="https://api.mapbox.com/mapbox-gl-js/v3.32.0/mapbox-gl.css"
       rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/v3.32.0/mapbox-gl.css"
     />
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.32.0/mapbox-gl.js"></script>
-
     <style>
       html,
       body {
         height: 100%;
         margin: 0;
-        font-family: system-ui, sans-serif;
       }
-
-      #map {
-        position: absolute;
-        inset: 0;
+      #validation-map {
+        width: 100%;
+        height: 100vh;
       }
-
-      #panel {
+      #validation-panel {
         position: absolute;
-        z-index: 1;
+        z-index: 10;
         top: 12px;
         left: 12px;
-        width: 300px;
-        padding: 14px;
+        max-width: 340px;
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        padding: 12px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.94);
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-      }
-
-      #panel h1 {
-        margin: 0 0 8px;
-        font-size: 18px;
-      }
-
-      #panel p {
-        margin: 6px 0;
-        font-size: 13px;
-        line-height: 1.4;
-      }
-
-      #radius {
-        width: 100%;
-      }
-
-      #results {
-        margin: 8px 0 0;
-        padding-left: 18px;
-        font-size: 13px;
+        background: white;
+        font:
+          14px system-ui,
+          sans-serif;
+        box-shadow: 0 2px 12px #0003;
       }
     </style>
   </head>
   <body>
-    <div id="map"></div>
+    <div id="validation-map"></div>
+    <aside id="validation-panel">
+      <strong>Temporary Sensor/PostGIS read check</strong>
+      <p id="validation-status">Loading Mapbox and Sensor GeoJSON...</p>
+      <ul id="validation-nearby"></ul>
+    </aside>
+    <script>
+      const status = document.querySelector("#validation-status");
+      const nearbyList = document.querySelector("#validation-nearby");
+      const empty = { type: "FeatureCollection", features: [] };
 
-    <section id="panel">
-      <h1>PostGIS radius search</h1>
-
-      <p>
-        Click the map. PostGIS finds nearby sensors and returns the radius
-        polygon that Mapbox draws.
-      </p>
-
-      <label for="radius">
-        Radius: <strong><span id="radius-value">1000</span> m</strong>
-      </label>
-
-      <input
-        id="radius"
-        type="range"
-        min="100"
-        max="5000"
-        step="100"
-        value="1000"
-      />
-
-      <p id="status">Loading sensors...</p>
-      <ul id="results"></ul>
-    </section>
-
-    <script type="module">
-      const INITIAL_CENTER = [-9.14, 38.72];
-      const EMPTY_FEATURE_COLLECTION = {
-        type: "FeatureCollection",
-        features: [],
-      };
-
-      async function fetchJson(url) {
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
-        }
-
+      async function getJson(url) {
+        const response = await fetch(url, {
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) throw new Error(`${response.status} ${url}`);
         return response.json();
       }
 
-      const mapboxConfig = await fetchJson("/api/mapbox/config");
-      mapboxgl.accessToken = mapboxConfig.access_token;
-
-      const radiusInput = document.getElementById("radius");
-      const radiusValue = document.getElementById("radius-value");
-      const status = document.getElementById("status");
-      const results = document.getElementById("results");
-
-      let searchCenter = INITIAL_CENTER;
-
-      const map = new mapboxgl.Map({
-        container: "map",
-        style: "mapbox://styles/mapbox/standard",
-        center: INITIAL_CENTER,
-        zoom: 11,
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-      async function loadAllSensors() {
-        const geojson = await fetchJson("/sensors");
-        map.getSource("all-sensors").setData(geojson);
-      }
-
-      async function searchNearby(longitude, latitude) {
-        searchCenter = [longitude, latitude];
-
-        const radiusM = Number(radiusInput.value);
-        radiusValue.textContent = radiusM;
-        status.textContent = "Querying PostGIS...";
-
-        const query = new URLSearchParams({
-          longitude: longitude.toString(),
-          latitude: latitude.toString(),
-          radius_m: radiusM.toString(),
-        });
-
-        try {
-          const data = await fetchJson(`/sensors/nearby?${query}`);
-
-          map.getSource("nearby-sensors").setData(data.sensors);
-          map.getSource("search-area").setData(data.search_area);
-
-          const names = data.sensors.features.map(
-            (feature) => feature.properties.name,
-          );
-
-          status.textContent =
-            `${names.length} sensor(s) within ${radiusM} m of ` +
-            `${longitude.toFixed(5)}, ${latitude.toFixed(5)}`;
-
-          results.replaceChildren(
-            ...names.map((name) => {
-              const item = document.createElement("li");
-              item.textContent = name;
-              return item;
-            }),
-          );
-        } catch (error) {
-          console.error(error);
-          status.textContent =
-            "The PostGIS query failed. Check the Rails logs.";
+      async function start() {
+        const config = await getJson("/maps/config");
+        if (!config.mapbox_public_token?.startsWith("pk.")) {
+          throw new Error("Configure a real public MAPBOX_PUBLIC_TOKEN");
         }
+
+        const map = new mapboxgl.Map({
+          container: "validation-map",
+          accessToken: config.mapbox_public_token,
+          style: "mapbox://styles/mapbox/standard",
+          center: [-9.14, 38.72],
+          zoom: 12,
+        });
+
+        map.on("error", (event) =>
+          console.error("Mapbox validation error:", event.error),
+        );
+
+        map.on("load", async () => {
+          try {
+            const sensors = await getJson(config.sensors_url);
+            if (
+              sensors.type !== "FeatureCollection" ||
+              !Array.isArray(sensors.features)
+            ) {
+              throw new Error(
+                "GET /api/sensors did not return a GeoJSON FeatureCollection",
+              );
+            }
+
+            map.addSource("sensors", { type: "geojson", data: sensors });
+            map.addSource("nearby", { type: "geojson", data: empty });
+            map.addSource("search-area", { type: "geojson", data: empty });
+
+            map.addLayer({
+              id: "search-area-fill",
+              type: "fill",
+              source: "search-area",
+              paint: { "fill-color": "#2563eb", "fill-opacity": 0.12 },
+            });
+            map.addLayer({
+              id: "sensor-points",
+              type: "circle",
+              source: "sensors",
+              paint: { "circle-radius": 7, "circle-color": "#334155" },
+            });
+            map.addLayer({
+              id: "nearby-points",
+              type: "circle",
+              source: "nearby",
+              paint: { "circle-radius": 10, "circle-color": "#dc2626" },
+            });
+            status.textContent = `${sensors.features.length} Sensors loaded. Click anywhere to query nearby.`;
+          } catch (error) {
+            status.textContent = error.message;
+            console.error(error);
+          }
+        });
+
+        map.on("click", async (event) => {
+          if (!map.getSource("nearby")) return;
+
+          const query = new URLSearchParams({
+            longitude: String(event.lngLat.lng),
+            latitude: String(event.lngLat.lat),
+            radius_m: "1000",
+          });
+
+          try {
+            const data = await getJson(`${config.nearby_sensors_url}?${query}`);
+            map.getSource("nearby").setData(data.sensors);
+            map.getSource("search-area").setData(data.search_area);
+            nearbyList.replaceChildren(
+              ...data.sensors.features.map((feature) => {
+                const li = document.createElement("li");
+                li.textContent = feature.properties.name;
+                return li;
+              }),
+            );
+            status.textContent = `${data.sensors.features.length} Sensors within 1,000 m.`;
+          } catch (error) {
+            status.textContent = error.message;
+            console.error(error);
+          }
+        });
       }
 
-      map.on("load", async () => {
-        map.addSource("search-area", {
-          type: "geojson",
-          data: EMPTY_FEATURE_COLLECTION,
-        });
-
-        map.addLayer({
-          id: "search-area-fill",
-          type: "fill",
-          slot: "middle",
-          source: "search-area",
-          paint: {
-            "fill-color": "#2563eb",
-            "fill-opacity": 0.14,
-          },
-        });
-
-        map.addLayer({
-          id: "search-area-outline",
-          type: "line",
-          slot: "middle",
-          source: "search-area",
-          paint: {
-            "line-color": "#2563eb",
-            "line-width": 2,
-          },
-        });
-
-        map.addSource("all-sensors", {
-          type: "geojson",
-          data: EMPTY_FEATURE_COLLECTION,
-        });
-
-        map.addLayer({
-          id: "all-sensors",
-          type: "circle",
-          source: "all-sensors",
-          paint: {
-            "circle-radius": 6,
-            "circle-color": "#334155",
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 2,
-          },
-        });
-
-        map.addSource("nearby-sensors", {
-          type: "geojson",
-          data: EMPTY_FEATURE_COLLECTION,
-        });
-
-        map.addLayer({
-          id: "nearby-sensors",
-          type: "circle",
-          source: "nearby-sensors",
-          paint: {
-            "circle-radius": 10,
-            "circle-color": "#dc2626",
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 3,
-          },
-        });
-
-        await loadAllSensors();
-        await searchNearby(INITIAL_CENTER[0], INITIAL_CENTER[1]);
-      });
-
-      map.on("click", (event) => {
-        searchNearby(event.lngLat.lng, event.lngLat.lat);
-      });
-
-      radiusInput.addEventListener("change", () => {
-        searchNearby(searchCenter[0], searchCenter[1]);
-      });
-
-      map.on("click", "all-sensors", (event) => {
-        const feature = event.features[0];
-
-        new mapboxgl.Popup()
-          .setLngLat(feature.geometry.coordinates)
-          .setHTML(`<strong>${feature.properties.name}</strong>`)
-          .addTo(map);
-      });
-
-      map.on("mouseenter", "all-sensors", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-
-      map.on("mouseleave", "all-sensors", () => {
-        map.getCanvas().style.cursor = "";
+      start().catch((error) => {
+        status.textContent = error.message;
+        console.error(error);
       });
     </script>
   </body>
