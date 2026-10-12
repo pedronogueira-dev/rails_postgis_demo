@@ -39,5 +39,8 @@ end
 
 gem "activerecord-postgis-adapter", "~> 11.1.0"
 gem "rgeo-geojson", "~> 2.2"
-gem "importmap-rails"
+gem "propshaft"
+gem "jsbundling-rails"
+gem "cssbundling-rails"
+gem "turbo-rails"
 gem "stimulus-rails"

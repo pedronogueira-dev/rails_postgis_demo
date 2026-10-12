@@ -1,0 +1,44 @@
+{
+  "name": "rails_postgis_demo",
+  "version": "1.0.0",
+  "description": "test of postgis and mapbox integration",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "build": "esbuild app/javascript/application.js --bundle --sourcemap --format=esm --outdir=app/assets/builds --public-path=/assets",
+    "build:watch": "npm run build -- --watch",
+    "build:css": "tailwindcss -i ./app/assets/stylesheets/application.tailwind.css -o ./app/assets/builds/application.css",
+    "build:css:watch": "npm run build:css -- --watch --poll"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedronogueira-dev/rails_postgis_demo.git"
+  },
+  "keywords": [
+    "mapbox",
+    "rails",
+    "postgis"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pedronogueira-dev/rails_postgis_demo/issues"
+  },
+  "homepage": "https://github.com/pedronogueira-dev/rails_postgis_demo#readme",
+  "dependencies": {
+    "@hotwired/stimulus": "3.2.2",
+    "@hotwired/turbo-rails": "8.0.23",
+    "mapbox-gl": "3.32.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "esbuild": "0.28.2",
+    "tailwindcss": "4.3.3"
+  },
+  "engines": {
+    "node": "24.21.0"
+  }
+}

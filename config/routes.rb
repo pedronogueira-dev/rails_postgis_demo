@@ -7,5 +7,6 @@ Rails.application.routes.draw do
         get :nearby
       end
     end
+    get "/mapbox/config", to: "mapbox#config", as: :mapbox_config
   end
 end

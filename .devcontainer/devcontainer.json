@@ -19,6 +19,9 @@
   ],
   "workspaceMount": "source=${localWorkspaceFolder},target=/rails,type=bind",
   "workspaceFolder": "/rails",
+  "mounts": [
+    "source=tiny_postgis_node_modules,target=/rails/node_modules,type=volume"
+  ],
   "runArgs": [
     "--env-file",
     "${localWorkspaceFolder}/.env",
@@ -27,7 +30,7 @@
   ],
   "overrideCommand": true,
   "shutdownAction": "stopContainer",
-  "postCreateCommand": "bundle check || bundle install",
+  "postCreateCommand": "(bundle check || bundle install) && if [ -f package-lock.json ]; then npm ci --include=optional; fi",
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": {
@@ -50,6 +53,7 @@
         "eamodio.gitlens"
       ],
       "settings": {
+        "task.allowAutomaticTasks": "on",
         "editor.formatOnSave": false,
         "[javascript]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode",

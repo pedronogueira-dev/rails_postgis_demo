@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dev:shell",
+      "type": "shell",
+      "command": "exec bash -l",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "group": "rails-development",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "dev:js",
+      "type": "shell",
+      "command": "exec npm run build:watch",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "group": "rails-development",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "dev:css",
+      "type": "shell",
+      "command": "exec npm run build:css:watch",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "group": "rails-development",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "dev:terminals",
+      "dependsOrder": "parallel",
+      "dependsOn": ["dev:shell", "dev:js", "dev:css"],
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      }
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+FROM node:24.21.0-bookworm-slim AS node_runtime
+
 FROM ruby:4.0.3-slim-bookworm
 
 RUN apt-get update -qq \
@@ -13,6 +15,17 @@ RUN apt-get update -qq \
       pkg-config \
       postgresql-client \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy Node/npm from the official multi-architecture Node image instead of
+# installing Debian's nodejs/npm packages. The Node image automatically uses
+# the target Docker architecture (linux/amd64 or linux/arm64).
+COPY --from=node_runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node_runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
+
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && test "$(node --version)" = "v24.21.0" \
+    && npm --version
 
 WORKDIR /rails
 
