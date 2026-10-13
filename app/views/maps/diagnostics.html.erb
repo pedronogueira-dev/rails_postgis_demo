@@ -1,0 +1,20 @@
+<div
+  data-controller="basemap-diagnostic"
+  data-diagnostic-style="<%= @diagnostic_style %>"
+  data-access-token="<%= @mapbox_public_token %>"
+  class="relative h-screen w-full overflow-hidden"
+>
+  <div data-basemap-diagnostic-canvas class="h-full w-full"></div>
+
+  <aside class="absolute left-3 top-3 z-10 w-[min(26rem,calc(100vw-1.5rem))] rounded-lg bg-white/95 p-4 text-sm shadow-xl">
+    <h1 class="text-lg font-semibold">Mapbox renderer diagnostic</h1>
+    <p class="mt-2 text-slate-700">No Sensor, PostGIS, or wastewater API is used here.</p>
+    <nav class="mt-3 flex flex-wrap gap-3">
+      <%= link_to "Inline (no tiles)", map_diagnostics_path(style: "inline"), class: "text-blue-700 underline" %>
+      <%= link_to "Remote Streets", map_diagnostics_path(style: "remote"), class: "text-blue-700 underline" %>
+      <%= link_to "Sensor map", map_path, class: "text-blue-700 underline" %>
+    </nav>
+    <p data-basemap-diagnostic-status role="status" class="mt-3 font-medium text-slate-800">Waiting for JavaScript...</p>
+    <pre data-basemap-diagnostic-report class="mt-2 whitespace-pre-wrap text-xs text-slate-600">No diagnostics yet.</pre>
+  </aside>
+</div>

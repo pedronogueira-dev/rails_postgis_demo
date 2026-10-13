@@ -9,7 +9,9 @@ module Sensors
         id: @sensor.id,
         geometry: @sensor.location,
         properties: {
-          name: @sensor.name
+          name: @sensor.name,
+          marker_color: @sensor.marker_color,
+          marker_icon: @sensor.marker_icon
         }
       ).as_json
     end

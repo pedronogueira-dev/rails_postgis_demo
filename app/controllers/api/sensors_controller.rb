@@ -4,6 +4,33 @@ module Api
       render json: collection(Sensor.order(:id))
     end
 
+    # Create a Sensor from permitted request fields; render its GeoJSON representation.
+    # @return [void]
+    def create
+      # This tutorial has no authentication. Writes are limited to trusted
+      # development; an exposed development server is still not a safe public API.
+      unless Rails.env.development?
+        return render json: {
+          error: "Local development demo only; authenticate and authorize before deployment."
+        }, status: :forbidden
+      end
+
+      point = coordinates
+      sensor = Sensor.build_at(
+        longitude: point.fetch(:longitude),
+        latitude: point.fetch(:latitude),
+        **sensor_params.to_h.symbolize_keys
+      )
+
+      if sensor.save
+        render json: Sensors::GeojsonSerializer.new(sensor).as_json, status: :created
+      else
+        render json: { errors: sensor.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue ActionController::ParameterMissing, ArgumentError, TypeError
+      render json: { error: "Provide valid Sensor attributes and coordinates." }, status: :bad_request
+    end
+
     def nearby
       point = coordinates
       radius_m = Float(params.fetch(:radius_m, 1_000))
@@ -32,6 +59,12 @@ module Api
     end
 
     private
+
+    # Permit only the fields accepted by the Sensor creation endpoint.
+    # @return [ActionController::Parameters] value described above
+    def sensor_params
+      params.require(:sensor).permit(:name, :marker_color, :marker_icon)
+    end
 
     def coordinates
       longitude = Float(params.require(:longitude))
