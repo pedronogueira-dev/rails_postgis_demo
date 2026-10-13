@@ -1,5 +1,7 @@
-import { Controller } from "@hotwired/stimulus";
-import { SpatialMap } from "../maps/spatial_map";
+// Responsibility: attach/detach the Sensor map when Turbo changes the DOM.
+/** @module controllers/map_controller */
+import { Controller } from "@hotwired/stimulus"
+import { SpatialMap } from "../maps/spatial_map"
 
 export default class extends Controller {
   /**
@@ -7,8 +9,8 @@ export default class extends Controller {
    * @returns {void}
    */
   connect() {
-    this.spatialMap = new SpatialMap(this.element);
-    this.spatialMap.connect();
+    this.spatialMap = new SpatialMap(this.element)
+    this.spatialMap.connect()
   }
 
   /**
@@ -17,7 +19,7 @@ export default class extends Controller {
    * @note Called by Stimulus before Turbo disposes of or replaces the page.
    */
   disconnect() {
-    this.spatialMap?.disconnect();
-    this.spatialMap = null;
+    this.spatialMap?.disconnect()
+    this.spatialMap = null
   }
 }

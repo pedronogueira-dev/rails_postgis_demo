@@ -1,3 +1,4 @@
+<%# Responsibility: compose the Mapbox viewport and independent controls. %>
 <div
   data-controller="map"
   data-spatial-map
@@ -5,92 +6,10 @@
   data-center="<%= [-9.14, 38.72].to_json %>"
   data-zoom="12"
   data-sensors-url="<%= api_sensors_path %>"
-  data-nearby-sensors-url="<%= nearby_api_sensors_path %>"
   data-create-sensor-url="<%= api_sensors_path %>"
+  data-nearby-sensors-url="<%= nearby_api_sensors_path %>"
   class="relative h-screen w-full overflow-hidden"
 >
-  <div data-map-canvas class="h-full w-full"></div>
-
-  <aside
-    class="absolute left-3 top-3 z-10 max-h-[calc(100vh-1.5rem)] w-[min(22.5rem,calc(100vw-1.5rem))] overflow-auto rounded-lg bg-white/95 p-4 text-sm shadow-xl backdrop-blur"
-  >
-    <h1 class="text-lg font-semibold">Sensor proximity</h1>
-    <p class="mt-2 leading-5 text-slate-700">
-      Click the map to ask PostGIS which Sensor Points are within the selected radius.
-    </p>
-
-    <label for="sensor-radius" class="mt-4 block font-medium text-slate-800">
-      Radius:
-      <strong><span data-radius-value>1000</span> m</strong>
-    </label>
-
-    <input
-      id="sensor-radius"
-      type="range"
-      min="100"
-      max="5000"
-      step="100"
-      value="1000"
-      data-radius
-      class="mt-2 w-full"
-    >
-
-    <p class="mt-2 text-xs text-slate-600">
-      Blank basemap? <%= link_to "Run renderer diagnostics", map_diagnostics_path(style: "inline"),
-        class: "font-semibold text-blue-700 underline" %>.
-    </p>
-    <p data-basemap-status role="status" class="mt-3 text-blue-700">Starting basemap...</p>
-    <p data-status class="mt-1 text-slate-600">Loading sensors...</p>
-
-    <section class="mt-4">
-      <h2 class="font-semibold text-slate-900">Nearby sensors</h2>
-      <ul data-sensor-results class="mt-1 list-disc space-y-1 pl-5 text-slate-700"></ul>
-    </section>
-
-    <section class="mt-5 border-t border-slate-200 pt-4">
-      <h2 class="font-semibold text-slate-900">Add a sensor</h2>
-
-      <label class="mt-3 block text-slate-700">
-        <span class="font-medium">Name</span>
-        <input
-          type="text"
-          value="New sensor"
-          data-sensor-name
-          class="mt-1 w-full rounded border border-slate-300 px-2 py-1"
-        >
-      </label>
-
-      <label class="mt-3 block text-slate-700">
-        <span class="font-medium">Colour</span>
-        <input
-          type="color"
-          value="#334155"
-          data-sensor-color
-          class="mt-1 h-9 w-full rounded border border-slate-300"
-        >
-      </label>
-
-      <label class="mt-3 block text-slate-700">
-        <span class="font-medium">Icon</span>
-        <select
-          data-sensor-icon
-          class="mt-1 w-full rounded border border-slate-300 px-2 py-1"
-        >
-          <option value="circle">Circle</option>
-          <option value="triangle">Triangle</option>
-          <option value="square">Square</option>
-        </select>
-      </label>
-
-      <button
-        type="button"
-        data-placement-button
-        disabled
-        aria-disabled="true"
-        class="mt-3 w-full rounded bg-slate-900 px-3 py-2 font-medium text-white hover:bg-slate-700"
-      >
-        Place sensor (enabled in Step 42)
-      </button>
-    </section>
-  </aside>
+  <%= render "maps/canvas" %>
+  <%= render "maps/panel" %>
 </div>

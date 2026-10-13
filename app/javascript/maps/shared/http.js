@@ -12,11 +12,10 @@
 export async function fetchJson(url, options = {}) {
   const response = await fetch(url, {
     ...options,
-    headers: { Accept: "application/json", ...(options.headers || {}) },
-  });
-  if (!response.ok)
-    throw new Error(`${response.status} ${response.statusText}`);
-  return response.json();
+    headers: { Accept: "application/json", ...(options.headers || {}) }
+  })
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
+  return response.json()
 }
 
 /**
@@ -26,7 +25,7 @@ export async function fetchJson(url, options = {}) {
  * @returns {URL} encoded URL
  */
 export function urlWithQuery(path, params) {
-  const url = new URL(path, window.location.origin);
-  url.search = new URLSearchParams(params).toString();
-  return url;
+  const url = new URL(path, window.location.origin)
+  url.search = new URLSearchParams(params).toString()
+  return url
 }
