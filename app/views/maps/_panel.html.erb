@@ -1,5 +1,10 @@
-<%# Responsibility: compose independent Mapbox control sections. %>
-<aside class="absolute left-3 top-3 z-10 max-h-[calc(100vh-1.5rem)] w-[min(22.5rem,calc(100vw-1.5rem))] overflow-auto rounded-lg bg-white/95 p-4 text-sm shadow-xl backdrop-blur">
+<%# Responsibility: sidebar geometry and composition; no event/HTTP ownership. %>
+<aside aria-label="Spatial map controls"
+       class="absolute left-3 top-3 z-10 max-h-[calc(100vh-1.5rem)] w-[min(23rem,calc(100vw-1.5rem))] space-y-3 overflow-y-auto rounded-lg border border-slate-200 bg-white/95 p-3 text-sm shadow-xl backdrop-blur">
+  <h1 class="text-lg font-semibold text-slate-950">Tiny Spatial Demo</h1>
+  <%= render "maps/map_statuses" %>
+  <%= render "maps/layer_controls" %>
   <%= render "maps/sensor_proximity" %>
   <%= render "maps/sensor_placement" %>
+  <%= render "maps/walking_routes" %>
 </aside>

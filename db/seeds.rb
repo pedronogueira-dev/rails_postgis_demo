@@ -16,3 +16,12 @@
   sensor = Sensor.find_or_initialize_by(name: name)
   sensor.update!(location: point)
 end
+
+
+{
+  "Route Alpha" => "LINESTRING(-9.1500 38.7150, -9.1400 38.7200, -9.1300 38.7250)",
+  "Route Beta" => "LINESTRING(-9.1550 38.7300, -9.1450 38.7280, -9.1350 38.7320)"
+}.each do |name, path|
+  route = WalkingRoute.find_or_initialize_by(name: name)
+  route.update!(path: path)
+end

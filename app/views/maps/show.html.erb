@@ -1,15 +1,14 @@
-<%# Responsibility: compose the Mapbox viewport and independent controls. %>
-<div
-  data-controller="map"
-  data-spatial-map
+<%# Responsibility: expose Rails paths/token and compose a map canvas + sidebar. %>
+<div data-controller="map" data-spatial-map
   data-access-token="<%= @mapbox_public_token %>"
-  data-center="<%= [-9.14, 38.72].to_json %>"
-  data-zoom="12"
+  data-center="<%= [-9.14, 38.72].to_json %>" data-zoom="12"
   data-sensors-url="<%= api_sensors_path %>"
-  data-create-sensor-url="<%= api_sensors_path %>"
   data-nearby-sensors-url="<%= nearby_api_sensors_path %>"
-  class="relative h-screen w-full overflow-hidden"
->
+  data-create-sensor-url="<%= api_sensors_path %>"
+  data-walking-routes-url="<%= api_walking_routes_path %>"
+  data-nearby-walking-routes-url="<%= nearby_api_walking_routes_path %>"
+  data-route-distance="250"
+  class="relative h-screen w-full overflow-hidden">
   <%= render "maps/canvas" %>
   <%= render "maps/panel" %>
 </div>

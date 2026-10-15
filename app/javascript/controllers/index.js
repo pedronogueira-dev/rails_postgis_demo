@@ -1,5 +1,4 @@
-// Responsibility: register every page controller with one Stimulus application.
-/** @module controllers/index */
+// Responsibility: register exactly one Stimulus application and its page controllers.
 import { application } from "./application";
 import BasemapDiagnosticController from "./basemap_diagnostic_controller";
 import MapController from "./map_controller";

@@ -1,0 +1,6 @@
+<%# Responsibility: present one accessible, independently selectable domain layer. %>
+<label class="flex cursor-pointer items-center gap-2 rounded border border-slate-200 p-2">
+  <input type="checkbox" data-demo-layer="<%= key %>" checked
+         aria-label="Show <%= caption %> layer" class="h-4 w-4">
+  <span><%= caption %></span>
+</label>

@@ -5,38 +5,40 @@
 export class PointSearch {
   /** @param {Object} host - owning SpatialMap */
   constructor(host) {
-    this.host = host
-    this.radiusInput = host.requiredElement("[data-radius]")
-    this.radiusValue = host.requiredElement("[data-radius-value]")
-    this.providers = []
-    this.lastPoint = host.center
-    this.request = null
-    this.onRadiusChange = () => this.handleRadiusChangeEvent()
+    this.host = host;
+    this.radiusInput = host.requiredElement("[data-radius]");
+    this.radiusValue = host.requiredElement("[data-radius-value]");
+    this.providers = [];
+    this.lastPoint = host.center;
+    this.request = null;
+    this.onRadiusChange = () => this.handleRadiusChangeEvent();
   }
 
   /** @param {Object} provider - one domain's queryAt/renderQueryResult pair */
-  addProvider(provider) { this.providers.push(provider) }
+  addProvider(provider) {
+    this.providers.push(provider);
+  }
 
   /** Register only the radius-change DOM event. @returns {void} */
   addRadiusChangeEvent() {
-    this.radiusInput.addEventListener("change", this.onRadiusChange)
+    this.radiusInput.addEventListener("change", this.onRadiusChange);
   }
 
   /** Remove the radius-change event and abort searches. @returns {void} */
   removeRadiusChangeEvent() {
-    this.radiusInput.removeEventListener("change", this.onRadiusChange)
-    this.abort()
+    this.radiusInput.removeEventListener("change", this.onRadiusChange);
+    this.abort();
   }
 
   /** Rerun all current domain queries at the latest clicked Point. @returns {void} */
   handleRadiusChangeEvent() {
-    void this.searchAt(...this.lastPoint)
+    void this.searchAt(...this.lastPoint);
   }
 
   /** @returns {void} */
   abort() {
-    this.request?.abort()
-    this.request = null
+    this.request?.abort();
+    this.request = null;
   }
 
   /**
@@ -45,31 +47,48 @@ export class PointSearch {
    * @param {number} longitude @param {number} latitude @returns {Promise<void>}
    */
   async searchAt(longitude, latitude) {
-    if (!this.host.sourcesReady()) return
-    this.abort()
-    const request = new AbortController()
-    this.request = request
-    this.lastPoint = [longitude, latitude]
-    const radiusM = Number(this.radiusInput.value)
-    this.radiusValue.textContent = radiusM
-    this.host.statusElement.textContent = "Querying PostGIS..."
+    if (!this.host.sourcesReady()) return;
+    this.abort();
+    const request = new AbortController();
+    this.request = request;
+    this.lastPoint = [longitude, latitude];
+    const radiusM = Number(this.radiusInput.value);
+    this.radiusValue.textContent = radiusM;
+    this.host.statusElement.textContent = "Querying PostGIS...";
     try {
-      const point = { longitude, latitude, radiusM }
-      const results = await Promise.all(this.providers.map(provider =>
-        provider.queryAt(point, request.signal)
-      ))
-      if (request.signal.aborted || this.request !== request ||
-          !this.host.sourcesReady()) return
-      this.providers.forEach((provider, index) => provider.renderQueryResult(results[index]))
-      this.host.statusElement.textContent =
-        `Queried ${longitude.toFixed(5)}, ${latitude.toFixed(5)}`
+      const point = { longitude, latitude, radiusM };
+      // Disabled layers do no Point-query work and cannot repaint stale results.
+      const active = this.providers.filter(
+        (provider) => this.host.layers?.isEnabled(provider.layerKey) !== false,
+      );
+      if (!active.length) {
+        this.host.statusElement.textContent = "No query layers enabled.";
+        return;
+      }
+      const results = await Promise.all(
+        active.map((provider) => provider.queryAt(point, request.signal)),
+      );
+      if (
+        request.signal.aborted ||
+        this.request !== request ||
+        !this.host.sourcesReady()
+      )
+        return;
+      active.forEach((provider, index) =>
+        provider.renderQueryResult(results[index]),
+      );
+      this.host.statusElement.textContent = `Queried ${longitude.toFixed(5)}, ${latitude.toFixed(5)}`;
     } catch (error) {
-      if (error.name === "AbortError" || request.signal.aborted ||
-          this.request !== request) return
-      console.error("Spatial Point query:", error)
-      this.host.statusElement.textContent = `Spatial query failed: ${error.message}`
+      if (
+        error.name === "AbortError" ||
+        request.signal.aborted ||
+        this.request !== request
+      )
+        return;
+      console.error("Spatial Point query:", error);
+      this.host.statusElement.textContent = `Spatial query failed: ${error.message}`;
     } finally {
-      if (this.request === request) this.request = null
+      if (this.request === request) this.request = null;
     }
   }
 }

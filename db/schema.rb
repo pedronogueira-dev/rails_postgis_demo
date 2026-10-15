@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_12_164431) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_13_113741) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "postgis"
@@ -23,5 +23,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_164431) do
     t.string "marker_color", default: "#334155", null: false
     t.string "marker_icon", default: "circle", null: false
     t.index ["location"], name: "index_sensors_on_location", using: :gist
+  end
+
+  create_table "walking_routes", force: :cascade do |t|
+    t.string "name", null: false
+    t.geography "path", limit: {srid: 4326, type: "line_string", geographic: true}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["path"], name: "index_walking_routes_on_path", using: :gist
   end
 end

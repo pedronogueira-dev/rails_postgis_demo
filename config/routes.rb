@@ -9,5 +9,9 @@ Rails.application.routes.draw do
     resources :sensors, only: %i[index create] do
       collection { get :nearby }
     end
+    resources :walking_routes, only: %i[index] do
+      collection { get :nearby }
+    end
   end
+
 end

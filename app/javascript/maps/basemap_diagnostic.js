@@ -128,6 +128,9 @@ export class BasemapDiagnostic {
             : "Streets style loaded; waiting for remote tiles...";
         this.updateReport();
       });
+      this.map.on("sourcedata", (event) => {
+        if (event.sourceId === "diagnostic-geometry") this.updateReport();
+      });
       this.map.on("idle", () => {
         // A failed style or tile request may still be followed by an idle event.
         // Never overwrite the evidence of that failure with a success message.
@@ -162,28 +165,32 @@ export class BasemapDiagnostic {
     }
   }
 
-  /**
-   * Collect renderer diagnostics without interrupting style initialization.
-   *
-   * @returns {void}
-   */
+  /** Show diagnostic evidence without asserting that a visible street map exists. @returns {void} */
   updateReport() {
     if (!this.map || !this.report) return;
-
     const canvas = this.map.getCanvas();
     const styleLoaded = this.map.isStyleLoaded();
-
+    // These probes can throw "Style is not done loading" during connect().
+    // Not-yet-measurable is null, not a renderer failure.
     let tilesLoaded = null;
     let styleLayerCount = null;
+    let geometrySourceLoaded = null;
     let probeWarning = null;
 
-    // Style-dependent diagnostics must wait for style readiness.
     if (styleLoaded) {
       try {
         tilesLoaded = this.map.areTilesLoaded();
         styleLayerCount = this.map.getStyle()?.layers?.length ?? 0;
       } catch (error) {
-        // A diagnostic probe must never stop the actual renderer.
+        probeWarning = error.message;
+      }
+    }
+    if (this.mode === "inline") {
+      try {
+        if (this.map.getSource("diagnostic-geometry")) {
+          geometrySourceLoaded = this.map.isSourceLoaded("diagnostic-geometry");
+        }
+      } catch (error) {
         probeWarning = error.message;
       }
     }
@@ -193,11 +200,11 @@ export class BasemapDiagnostic {
       canvas: `${canvas.width}x${canvas.height}`,
       styleLoaded,
       tilesLoaded,
+      geometrySourceLoaded,
       styleLayerCount,
       probeWarning,
       errors: this.errors,
     };
-
     this.report.textContent = JSON.stringify(evidence, null, 2);
   }
 

@@ -1,0 +1,18 @@
+<%# Responsibility: list ONLY layers implemented so far; extend at Steps 48/54. %>
+<% dataLayers = [["sensors", "Sensors"], ["walking_routes", "Walking routes"]] %>
+<details open class="rounded-lg border border-slate-200 bg-white">
+  <summary class="cursor-pointer px-3 py-2 font-semibold">Visible and loaded layers</summary>
+  <fieldset class="space-y-2 border-t border-slate-100 p-3">
+    <legend class="sr-only">Spatial reference layers</legend>
+    <div class="flex gap-2">
+      <button type="button" data-enable-demo-layers
+              class="rounded border border-slate-300 px-2 py-1 text-xs">Enable all</button>
+      <button type="button" data-disable-demo-layers
+              class="rounded border border-slate-300 px-2 py-1 text-xs">Disable all</button>
+    </div>
+    <% dataLayers.each do |key, caption| %>
+      <%= render "maps/layer_toggle", key: key, caption: caption %>
+    <% end %>
+    <p data-demo-layer-status role="status" class="text-xs text-slate-600"><%= dataLayers.count %> of <%= dataLayers.count %> layers enabled.</p>
+  </fieldset>
+</details>

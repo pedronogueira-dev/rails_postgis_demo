@@ -17,8 +17,8 @@ module Api
 
       point = coordinates
       sensor = Sensor.build_at(
-        longitude: point.fetch(:longitude),
-        latitude: point.fetch(:latitude),
+        longitude: point.longitude,
+        latitude: point.latitude,
         **sensor_params.to_h.symbolize_keys
       )
 
@@ -37,8 +37,8 @@ module Api
       raise ArgumentError, "invalid radius" unless radius_m.positive? && radius_m <= 50_000
 
       sensors = Sensor.nearby(
-        longitude: point.fetch(:longitude),
-        latitude: point.fetch(:latitude),
+        longitude: point.longitude,
+        latitude: point.latitude,
         radius_m: radius_m
       ).order(:id).limit(100)
 
@@ -46,8 +46,8 @@ module Api
         sensors: collection(sensors),
         search_area: Geojson::Feature.new(
           geometry: Spatial::BufferQuery.call(
-            longitude: point.fetch(:longitude),
-            latitude: point.fetch(:latitude),
+            longitude: point.longitude,
+            latitude: point.latitude,
             radius_m: radius_m
           ),
           properties: { radius_m: radius_m }
@@ -66,14 +66,13 @@ module Api
       params.require(:sensor).permit(:name, :marker_color, :marker_icon)
     end
 
+    # Validate and normalize query coordinates to WGS 84 longitude and latitude.
+    # @return [Spatial::Coordinates] validated WGS 84 coordinate value object
     def coordinates
-      longitude = Float(params.require(:longitude))
-      latitude = Float(params.require(:latitude))
-
-      raise ArgumentError, "invalid longitude" unless longitude.between?(-180, 180)
-      raise ArgumentError, "invalid latitude" unless latitude.between?(-90, 90)
-
-      { longitude: longitude, latitude: latitude }
+      Spatial::Coordinates.new(
+        longitude: params.require(:longitude),
+        latitude: params.require(:latitude)
+      )
     end
 
     def collection(records)
